@@ -114,6 +114,8 @@ def plain(text: str) -> str:
 
 
 def is_korean(text: str) -> bool:
+    """Whether the prose is Korean; code blocks and inline code don't count."""
+    text = re.sub(r"```.*?```|`[^`\n]*`", "", text, flags=re.S)
     letters = re.findall(r"[가-힣A-Za-z]", text)
     return bool(letters) and sum("가" <= c <= "힣" for c in letters) / len(letters) > 0.3
 

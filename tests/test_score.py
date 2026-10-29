@@ -73,3 +73,8 @@ def test_rule_tells_clean_text():
 
 def test_rule_tells_counts_a_composed_emoji_once():
     assert [t["match"] for t in rule_tells("설정 ⚙️ 완료 🙇🏻‍♂️")] == ["⚙️", "🙇🏻‍♂️"]
+
+
+def test_is_korean_ignores_code():
+    text = "레포 폴더를 연결하세요.\n\n```bash\nln -s \"$PWD\" ~/.claude/skills/tell-scope\nln -s \"$PWD\" ~/.codex/skills/tell-scope\n```\n\n그다음 `python scripts/score.py draft.txt`로 채점합니다."
+    assert is_korean(text)
