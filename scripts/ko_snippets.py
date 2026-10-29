@@ -6,8 +6,11 @@ Korean, so the Korean head's features are re-described from these snippets
 train_ko_head.py, then re-extracts only the chosen documents for token
 positions.
 
-  python scripts/ko_snippets.py --katfish path/to/katfish_dataset --cache work/ \
-      [--extra more.jsonl ...] --out work/ko_snippets.json
+  python scripts/ko_snippets.py --katfish path/to/katfish_dataset --cache work/ \\
+      [--head heads/ko.json] [--extra more.jsonl ...] --out work/ko_snippets.json
+
+Only features without a description are collected, so a head retrained with
+train_ko_head.py --reuse needs snippets for its new features only.
 
 --extra files are JSON lines of {"text": ..., "label": 0|1}; their features are
 extracted here.
@@ -31,12 +34,14 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--katfish", required=True)
     p.add_argument("--cache", default="work")
+    p.add_argument("--head", default=KO_HEAD)
     p.add_argument("--extra", nargs="*", default=[])
     p.add_argument("--per-feature", type=int, default=8, help="documents per feature")
     p.add_argument("--out", default=os.path.join("work", "ko_snippets.json"))
     args = p.parse_args()
 
-    head = json.load(open(KO_HEAD, encoding="utf-8"))
+    head = json.load(open(args.head, encoding="utf-8"))
+    head["features"] = [f for f in head["features"] if f.get("description") is None]
     det = load()
 
     docs, X = [], []

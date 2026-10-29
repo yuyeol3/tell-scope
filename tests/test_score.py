@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-from score import is_korean, ko_detect, passage, plain, runs  # noqa: E402
+from score import is_korean, ko_detect, passage, plain, rule_tells, runs  # noqa: E402
 
 
 def test_runs_merges_adjacent_tokens_and_sorts_by_strength():
@@ -48,3 +48,28 @@ def test_ko_detect_importance_is_weight_times_log1p_activation():
     assert sorted(feats[0].highlights) == [(0, 2.0), (2, 1.0)]
     assert feats[1].highlights == [(1, 0.5)]
     assert tokens == ["가", "나", "다"]
+
+
+def test_plain_strips_emoji_including_joiners():
+    assert plain("# 🚀 시작 ⚙️\n휴식 🙇🏻‍♂️ 필요") == "시작\n휴식  필요"
+
+
+def test_rule_tells_flags_korean_punctuation_emoji_and_stock_phrases():
+    text = "오늘날 개발은 중요합니다 — 정말로.\n설계·구현 🎯\n결론적으로, 성장을 응원합니다."
+    rules = [(t["rule"], t["match"]) for t in rule_tells(text)]
+    assert rules == [("stock-phrase", "오늘날"), ("em-dash", "—"), ("middle-dot", "·"), ("emoji", "🎯"),
+                     ("stock-phrase", "결론적으로")]
+    assert rule_tells(text)[1]["line"] == "오늘날 개발은 중요합니다 — 정말로."
+
+
+def test_rule_tells_english_openers_only_at_sentence_start():
+    rules = [t["match"] for t in rule_tells("We leverage it. Moreover, it works. It is not moreover, fine.")]
+    assert rules == ["leverage", ". Moreover,"]
+
+
+def test_rule_tells_clean_text():
+    assert rule_tells("그냥 평범하게 쓴 문장이다. 숫자 1-2와 하이픈은 괜찮다.") == []
+
+
+def test_rule_tells_counts_a_composed_emoji_once():
+    assert [t["match"] for t in rule_tells("설정 ⚙️ 완료 🙇🏻‍♂️")] == ["⚙️", "🙇🏻‍♂️"]
